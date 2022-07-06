@@ -20,6 +20,11 @@ public class Member {
     @JoinColumn(name = "team_id")
     private Team team;
 
+    public void changeTeam(Team team) {
+        this.team = team;
+        team.getMembers().add(this);
+    }
+
     @Override
     public String toString() {
         return "Member{" +
