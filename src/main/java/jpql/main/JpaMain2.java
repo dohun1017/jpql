@@ -1,11 +1,12 @@
 package jpql.main;
 
+import jpql.Address;
 import jpql.Member;
+import jpql.MemberDTO;
+import jpql.Team;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.EntityTransaction;
-import javax.persistence.Persistence;
+import javax.persistence.*;
+import java.util.List;
 
 public class JpaMain2 {
 
@@ -23,27 +24,57 @@ public class JpaMain2 {
             member.setAge(10);
             em.persist(member);
 
-            /**
-             * TypedQuery 반환 타입이 명확할 때 사용
-             * Query 반환 타입이 명확하지 않을 때 사용
-             */
-//            TypedQuery<Member> query1 = em.createQuery("select m from Member as m", Member.class);
-//            TypedQuery<String> query2 = em.createQuery("select m.username from Member as m", String.class);
-//            Query query3 = em.createQuery("select m.username, m.age from Member as m");
+            em.flush();
+            em.clear();
 
             /**
-             * .getResultList(): 다건 조회
-             *      - 결과가 없으면 빈 리스트 반환(NullPointerException 걱정 필요 X)
-             * .getSingleResult(): 단건 조회(무조건 결과가 하나 있을때만 사용)
-             *      - 결과가 없으면 NoResultException
-             *      - 둘 이상이면 NonUniqueResultException
+             * 엔티티 타입 프로젝션 결과는 모두 영속성 컨텍스트이다.
              */
-//            List<Member> resultList = query1.getResultList();
-//            Member singleResult = query1.getSingleResult();
+            em.createQuery("select m from Member as m", Member.class)
+                    .getResultList().forEach(m -> {
+                        System.out.println("member.username() = " + m.getUsername());
+                        m.setUsername("newMember");
+                    });
 
-            em.createQuery("select m from Member as m where m.username = :username", Member.class)
-                    .setParameter("username", "member1")
-                    .getResultList().forEach(m -> System.out.println("member.username() = " + m.getUsername()));
+            /**
+             * 묵시적 조인
+             *      em.createQuery("select m.team from Member as m", Team.class)
+             * 명시적 조인(더 추천)
+             *      em.createQuery("select t from Member as m join m.team as t", Team.class)
+             */
+            em.createQuery("select m.team from Member as m", Team.class);
+
+            /**
+             * 임베디드 타입 프로젝션
+             *      em.createQuery("select m.team from Member as m", Team.class)
+             */
+            em.createQuery("select o.address from Order as o", Address.class);
+
+
+            /**
+             * 스칼라 타입 프로젝션
+             */
+            //Query 타입으로 조회
+            List resultList1 = em.createQuery("select distinct m.username, m.age from Member as m").getResultList();
+            for (Object o : resultList1) {
+                Object[] result = (Object[]) o;
+                System.out.println("username = " + result[0]);
+                System.out.println("age = " + result[1]);
+            }
+            //Object[] 타입으로조회
+            List<Object[]> resultList2 = em.createQuery("select distinct m.username, m.age from Member as m").getResultList();
+            for (Object[] objects : resultList2) {
+                System.out.println("username = " + objects[0]);
+                System.out.println("age = " + objects[1]);
+            }
+            //new 명령어로 조회(패키지 명을 적어줘야함)
+            List<MemberDTO> resultList3 = em.createQuery("select new jpql.MemberDTO(m.username, m.age) from Member as m", MemberDTO.class)
+                    .getResultList();
+            for (MemberDTO memberDTO : resultList3) {
+                System.out.println("memberDTO.getUsername() = " + memberDTO.getUsername());
+                System.out.println("memberDTO.getAge() = " + memberDTO.getAge());
+            }
+
 
             tx.commit();
         } catch (Exception e) {
