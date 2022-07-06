@@ -15,6 +15,7 @@
             <property name="hibernate.show_sql" value="true"/>
             <property name="hibernate.format_sql" value="true"/>
             <property name="hibernate.use_sql_comments" value="true"/>
+            <property name="hibernate.default_batch_fetch_size" value="100"/>
 
             <!--JPA는 jdbc batch의 크기만큼 쿼리를 모아서 한꺼번에 쿼리를 DB에 보낸다.-->
 <!--            <property name="hibernate.jdbc.batch_size" value="4"/>-->
